@@ -1,130 +1,170 @@
-# 📊 AI Excel Analyst
+Talk to your spreadsheets. Upload a CSV or Excel file and ask questions in plain English.
 
-Upload a CSV or Excel file and ask questions about it in plain English. No sign-up and no API key for users.
+What it is
 
-## What it is
+ExcelTalk is a web app that turns a spreadsheet into something you can chat with. You upload a file, ask a question such as "What are the top 5 products by revenue?", and an AI model writes the SQL, runs it on your data, and explains the result with numbers and tables.
 
-A web app that turns a spreadsheet into something you can chat with. An AI model (via [Groq](https://groq.com)) writes and runs SQL on your data with [DuckDB](https://duckdb.org) and explains the results. Built with Streamlit, Agno, DuckDB and pandas.
+It also includes a data profile, a SQL editor and charts, so you can check the AI's answers yourself.
 
-## How it works
+Built with: Streamlit · Agno · DuckDB · pandas · Groq · uv
 
-1. The user uploads a CSV/XLSX file. It is cleaned with pandas (trimmed text, numbers and dates detected, `NA`/`null` treated as empty).
-2. The data is loaded into a private in-memory DuckDB table. File and network access is switched off and locked.
-3. The user asks a question. An AI agent writes read-only SQL, runs it, and answers with numbers and tables.
-4. If a model is busy, unavailable or rate-limited, the app automatically tries the next best Groq model, so it keeps working.
+Main features
 
-The Groq key is stored once on the server as a secret. Users never see it.
+Ask questions in plain English, with follow-up questions
+One-click Summarize dataset, Data quality check and Suggest questions
+CSV, XLSX and XLS support, with an Excel sheet picker
+Automatic data cleaning
+Data profile, read-only SQL tab and charts (bar, line, scatter, histogram)
+Download the cleaned CSV, query results and the chat
+Automatic model fallback and usage limits
+How to run it locally
 
-## How to use (for users)
+You need Python 3.10+, uv and a free Groq API key from https://console.groq.com/keys.
 
-1. Open the app link.
-2. Upload a CSV or Excel file (up to 20 MB).
-3. Ask a question, or click **Summarize dataset**, **Data quality check** or **Suggest questions**.
-4. Use the other tabs for a data profile, your own SQL, and charts.
+1. Get the code
 
-Example: *"What are the top 5 products by revenue?"*
+bash
+git clone https://github.com/<your-username>/exceltalk.git
+cd exceltalk
 
-## Features
+2. Install the dependencies
 
-- Chat with your data, with follow-up questions
-- Excel sheet picker, automatic data cleaning, data profile
-- Read-only SQL tab and charts (bar, line, scatter, histogram)
-- Download the cleaned CSV, query results and the chat
-- Automatic model selection and fallback
-- Usage limits per visitor and for the whole app
-- Optional access code to keep the app private to your company
+bash
+uv sync
 
-## Deploy live (for the owner)
+3. Add your own Groq API key
 
-You need a free Groq key from <https://console.groq.com/keys>.
+Copy the example file and rename the copy to secrets.toml:
 
-### Option A: Streamlit Community Cloud (free, easiest)
+bash
+# Mac / Linux
+cp .streamlit/secrets.toml.example .streamlit/secrets.toml
 
-1. Push this project to a GitHub repo (`app.py`, `pyproject.toml` and `uv.lock` in the root).
-2. Go to <https://share.streamlit.io> → **Create app** → choose the repo → main file `app.py`.
-3. Before deploying, open **Advanced settings → Secrets** and paste:
-   ```toml
-   GROQ_API_KEY = "gsk_your_key_here"
-   ```
-4. Click **Deploy** and share the `*.streamlit.app` link.
+# Windows (PowerShell)
+copy .streamlit\secrets.toml.example .streamlit\secrets.toml
 
-Free apps go to sleep when idle and wake on the next visit. For an always-on service use Option B.
+Open .streamlit/secrets.toml and put your key inside the quotes:
 
-### Option B: Docker on any host (Render, Railway, Google Cloud Run, a VPS)
+toml
+GROQ_API_KEY = "gsk_your_key_here"
 
-```bash
-docker build -t ai-excel-analyst .
-docker run -p 8501:8501 -e GROQ_API_KEY=gsk_your_key_here ai-excel-analyst
-```
+This file is git-ignored. Never commit it or share your key.
 
-On a hosting service, deploy from the repo (it detects the `Dockerfile`) and add `GROQ_API_KEY` as an environment variable in the dashboard. The app listens on `$PORT`.
+4. Start the app
 
-### Run locally
-
-This project uses [uv](https://docs.astral.sh/uv/).
-
-```bash
-uv sync                                                       # install dependencies
-cp .streamlit/secrets.toml.example .streamlit/secrets.toml    # then put your key in it
+bash
 uv run streamlit run app.py
-```
 
-Run `uv lock` once and commit the generated `uv.lock` so every deploy installs the same versions. Always start the app with `uv run streamlit run app.py`, not `python app.py`.
+Open http://localhost:8501, upload a file and ask a question.
 
-## Settings (all optional)
+Always start the app with uv run streamlit run app.py. Running python app.py does not work.
 
-Set these as secrets or environment variables.
+Optional settings. Add these to secrets.toml or set them as environment variables:
 
-| Name | Default | Purpose |
-|---|---|---|
-| `GROQ_API_KEY` | none (required) | Your Groq key |
-| `APP_ACCESS_CODE` | off | Password users must enter (for company-only use) |
-| `MODELS` | auto | Comma-separated model order, e.g. `openai/gpt-oss-120b,openai/gpt-oss-20b` |
-| `MAX_QUESTIONS_PER_SESSION` | 40 | Questions per visitor session |
-| `MAX_QUESTIONS_PER_MINUTE` | 20 | All visitors together |
-| `MAX_QUESTIONS_PER_DAY` | 1500 | All visitors together |
-| `MAX_ROWS` | 200000 | Rows used from an upload |
+Name	Default	Purpose
+APP_ACCESS_CODE	off	Password users must enter before using the app
+MODELS	auto	Comma-separated model order, e.g. openai/gpt-oss-120b,openai/gpt-oss-20b
+MAX_QUESTIONS_PER_SESSION	40	Questions per visitor session
+MAX_QUESTIONS_PER_MINUTE	20	All visitors together
+MAX_QUESTIONS_PER_DAY	1500	All visitors together
+MAX_ROWS	200000	Rows used from an upload
 
-The upload size limit (20 MB) is set in `.streamlit/config.toml`.
+The upload limit (20 MB) is set in .streamlit/config.toml.
 
-## Important for running it for other people
-
-- **Your key pays for everyone.** The free Groq tier has its own rate limits, so keep the usage limits above set. For many users or company use, use a paid Groq plan.
-- **Never commit your key.** Use secrets or environment variables only. `secrets.toml` is git-ignored.
-- **Privacy.** Files are processed in memory and not saved. Questions and the relevant data are sent to Groq. Tell users not to upload data they can't share with a third-party AI provider, and add a privacy notice for company use.
-- **Security.** The AI and SQL tab can only read the uploaded table. SQL is read-only and DuckDB external access is locked.
-- **AI can be wrong.** Check important numbers with the SQL tab.
-
-## Project structure
-
-```
-ai_excel_analyst/
-├── app.py                 # Streamlit interface
+Project structure
+exceltalk/
+├── app.py                      # Streamlit interface: tabs, chat, upload, limits check
 ├── core/
-│   ├── config.py          # Settings and secrets
-│   ├── data.py            # Reading, cleaning, DuckDB
-│   ├── llm.py             # Groq models and fallback
-│   └── limits.py          # Shared usage limits
+│   ├── __init__.py
+│   ├── config.py               # Settings and secrets (API key, limits, model list)
+│   ├── data.py                 # File reading, cleaning, profiling, locked DuckDB table
+│   ├── llm.py                  # Groq models through Agno, model discovery and fallback
+│   └── limits.py               # Shared rate limiter for all visitors
 ├── .streamlit/
-│   ├── config.toml
-│   └── secrets.toml.example
-├── Dockerfile
-├── pyproject.toml         # Dependencies (uv)
-├── uv.lock                # Created by `uv lock`
+│   ├── config.toml             # Upload size, XSRF protection, theme
+│   └── secrets.toml.example    # Template for your local secrets.toml
+├── Dockerfile                  # Optional container build (uses uv)
+├── .dockerignore
+├── .gitignore                  # Keeps secrets and data files out of Git
 ├── .python-version
+├── pyproject.toml              # Project metadata and dependencies (uv)
+├── uv.lock                     # Exact dependency versions
 └── README.md
-```
+How it works
+ Upload CSV / XLSX
+        │
+        ▼
+ pandas: read + clean
+        │
+        ▼
+ DuckDB (in memory)  →  table `uploaded_data`   (file/network access locked)
+        ▲
+        │  read-only SQL through Agno's DuckDB tool
+        │
+ Agno agent  ⇄  Groq model (auto-selected, with fallback)
+        │
+        ▼
+ Streamlit: Ask · Data & Profile · SQL · Charts
 
-## Troubleshooting
+1. Reading and cleaning (core/data.py) The file is read with pandas, up to MAX_ROWS rows. Column names are trimmed, empty rows and columns are dropped, and text is trimmed. Values such as NA, N/A, null, missing and - become empty. A text column becomes numeric only if every non-empty value parses as a number. Columns whose name contains date or time are parsed as dates.
 
-| Problem | Fix |
-|---|---|
-| "The AI is not configured yet" | `GROQ_API_KEY` is missing or not set in Secrets / environment variables. |
-| "The AI service is very busy" | Groq rate limit. Wait a minute, or upgrade your Groq plan. |
-| "Temporarily unavailable" / model errors | Set `MODELS` to models your key can use (see <https://console.groq.com/docs/models>). |
-| `missing ScriptRunContext` | You ran `python app.py`. Use `uv run streamlit run app.py`. |
-| Build fails on deploy | Check the log. Run `uv lock` locally and commit `uv.lock` so versions are pinned. |
+2. A private, locked database (core/data.py) The cleaned data is loaded into an in-memory DuckDB table called uploaded_data. Then DuckDB's external access is turned off and its configuration is locked, so neither the AI nor the SQL tab can read server files or URLs. Each visitor session gets its own database.
 
-## License
+3. The AI agent (core/llm.py) An Agno agent is given the table's column names and types, plus rules: always quote column names, run only read-only SELECT queries, never invent numbers, and fix failed queries. The agent writes SQL, runs it through the DuckDB tool and explains the result. The last few chat messages are sent as context so follow-up questions work.
 
-Add a `LICENSE` file (for example MIT) before publishing.
+4. Model selection and fallback (core/llm.py) On start, the app asks Groq which chat models the configured key can use (refreshed every 30 minutes) and orders them by preference. If a model is missing, rate-limited or fails, the app tries up to three models before showing a friendly error. Groq's model names change over time, so nothing depends on one fixed model. You can force an order with MODELS.
+
+5. Usage limits (core/limits.py, app.py) A shared limiter caps questions per minute and per day for the whole app, and each session has its own question cap. This protects the API quota from heavy use.
+
+6. The interface (app.py)
+
+Ask: chat, quick actions and chat download.
+Data & Profile: preview, missing values, unique counts, numeric summary, cleaned CSV download.
+SQL: your own read-only queries (SELECT, WITH, DESCRIBE, SUMMARIZE).
+Charts: bar, line, scatter and histogram without calling the AI.
+
+7. Security and privacy
+
+The API key is read only from Streamlit secrets or environment variables and is never shown to users.
+Files are processed in memory and not saved. Each user's data and chat stay in their own session.
+Questions, the table schema and query results are sent to Groq to produce answers. Don't upload data you aren't allowed to share with a third-party AI provider.
+Optional APP_ACCESS_CODE restricts the app to people who know the password.
+AI answers can be wrong. Check important numbers with the SQL tab.
+Troubleshooting
+Problem	Fix
+missing ScriptRunContext or 'NoneType' object has no attribute 'getvalue'	You ran python app.py. Use uv run streamlit run app.py.
+uv: command not found	Install uv from https://docs.astral.sh/uv/getting-started/installation/, then open a new terminal.
+"The AI is not configured yet"	GROQ_API_KEY was not found. Check that the file is named exactly .streamlit/secrets.toml, the line is GROQ_API_KEY = "gsk_..." with quotes, then restart the app with Ctrl+C and run it again.
+"The AI service is not configured correctly"	The key is invalid or revoked. Create a new one at https://console.groq.com/keys and update secrets.toml.
+"The AI service is very busy" / rate limit	Groq's limit was reached. Wait a minute and retry, or use a paid Groq plan.
+model_not_found or "temporarily unavailable"	Models change on Groq. Check https://console.groq.com/docs/models and set MODELS to models your key can use.
+"That question needs too much data at once"	Ask a narrower question or upload a smaller file.
+"Could not read this file"	Make sure it is a valid .csv, .xlsx or .xls file under 20 MB.
+Numbers or dates are not detected correctly	Name date columns with date or time, and remove text such as "$" or "units" from number cells.
+You see "questions left: 0"	The session limit was reached. Refresh the page, or raise MAX_QUESTIONS_PER_SESSION.
+Dependency install or deploy build fails	Run uv lock and commit the new uv.lock, then try again.
+Free Streamlit app is asleep	Open the link and click the wake-up button.
+
+If your problem is not listed, open a GitHub issue with the error message and the steps you took. Don't include your API key or private data.
+
+Future collaborations
+
+Ideas where contributions are welcome:
+
+More file types: Parquet, JSON, Google Sheets, multi-sheet joins
+Better charts: AI-generated charts from questions, downloadable images
+Saved projects: optional accounts and saved conversations
+More AI providers: a provider switch beyond Groq
+Team features: shared workspaces, role-based access, audit logs
+Quality: automated tests, benchmarks for SQL accuracy, more languages
+Deployment: one-click deploy guides, a Docker Compose setup
+
+How to contribute
+
+Fork the repository and create a branch (git checkout -b feature/your-idea).
+Make your change and test it with uv run streamlit run app.py.
+Open a pull request that explains what changed and why.
+
+For bigger ideas, partnerships or company use, open a GitHub issue titled "Collaboration" or contact the maintainer: <your-email-or-link>.
+
+Add a LICENSE file (for example MIT) before publishing.
