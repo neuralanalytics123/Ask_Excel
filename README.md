@@ -2,6 +2,8 @@
 
 Talk to your Excel Files . Upload a CSV or Excel file and ask questions in plain English.
 
+Project Link( https://neuralanalytics123-ask-excel-app-qr7agy.streamlit.app/)
+
 ## What it is
 
 ExcelTalk is a web app that turns a spreadsheet into something you can chat with. You upload a file, ask a question such as *"What are the top 5 products by revenue?"*.
